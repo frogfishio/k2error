@@ -1,9 +1,5 @@
-// src/errors/ApplicationError.ts
-
-/**
- * Enum representing various ServiceError types.
- */
-export enum K2Error {
+// Enum representing various ServiceError types
+export enum ServiceError {
   VALIDATION_ERROR = "validation_error",
   INVALID_REQUEST = "invalid_request",
   ALREADY_EXISTS = "already_exists",
@@ -15,44 +11,56 @@ export enum K2Error {
   SYSTEM_ERROR = "system_error",
   CONFIGURATION_ERROR = "configuration_error",
   SERVICE_ERROR = "service_error",
+
+  // New suggested additions
+  BAD_REQUEST = "bad_request",
+  PAYMENT_REQUIRED = "payment_required",
+  CONFLICT = "conflict",
+  UNAUTHORIZED = "unauthorized",
+  FORBIDDEN = "forbidden",
+  TOO_MANY_REQUESTS = "too_many_requests",
+  NOT_IMPLEMENTED = "not_implemented",
+  BAD_GATEWAY = "bad_gateway",
+  SERVICE_UNAVAILABLE = "service_unavailable",
+  GATEWAY_TIMEOUT = "gateway_timeout",
 }
 
-/**
- * Mapping of error identifiers to HTTP status codes.
- */
-const errorCodes: Record<string, number> = {
-  validation_error: 400, // When passed data fails validation
-  invalid_request: 400, // The request is malformed or has invalid parameters
-  already_exists: 400, // When inserting data that already exists
-  invalid_token: 401, // When the access token is invalid or expired
-  auth_error: 403, // When authentication fails
-  insufficient_scope: 403, // When the request requires higher privileges
-  not_found: 404, // When a record is not found
-  unsupported_method: 405, // When an HTTP method is not supported
-  data_error: 409, // Conflict error
-  system_error: 500, // Internal system error
-  configuration_error: 500, // Configuration-related errors
-  service_error: 502, // When calling a remote service fails
+// Mapping of error identifiers to HTTP status codes
+const errorCodes: Record<ServiceError, number> = {
+  [ServiceError.VALIDATION_ERROR]: 400,
+  [ServiceError.INVALID_REQUEST]: 400,
+  [ServiceError.ALREADY_EXISTS]: 400,
+  [ServiceError.INVALID_TOKEN]: 401,
+  [ServiceError.AUTH_ERROR]: 403,
+  [ServiceError.INSUFFICIENT_SCOPE]: 403,
+  [ServiceError.NOT_FOUND]: 404,
+  [ServiceError.UNSUPPORTED_METHOD]: 405,
+  [ServiceError.SYSTEM_ERROR]: 500,
+  [ServiceError.CONFIGURATION_ERROR]: 500,
+  [ServiceError.SERVICE_ERROR]: 502,
+
+  // New mappings for suggested additions
+  [ServiceError.BAD_REQUEST]: 400,
+  [ServiceError.PAYMENT_REQUIRED]: 402,
+  [ServiceError.CONFLICT]: 409,
+  [ServiceError.UNAUTHORIZED]: 401,
+  [ServiceError.FORBIDDEN]: 403,
+  [ServiceError.TOO_MANY_REQUESTS]: 429,
+  [ServiceError.NOT_IMPLEMENTED]: 501,
+  [ServiceError.BAD_GATEWAY]: 502,
+  [ServiceError.SERVICE_UNAVAILABLE]: 503,
+  [ServiceError.GATEWAY_TIMEOUT]: 504,
 };
 
-/**
- * Custom ApplicationError class extending the native Error class.
- */
-export class ApplicationError extends Error {
+// Custom ApplicationError class extending the native Error class
+export class K2Error extends Error {
   public code: number;
   public error_description: string;
   public trace: string;
-  public error: string;
+  public error: ServiceError;
 
-  /**
-   * Constructs a new ApplicationError instance.
-   * @param error - The error identifier.
-   * @param errorDescription - A descriptive message for the error.
-   * @param trace - A unique trace identifier for debugging.
-   * @param originalError - An optional original error for internal use.
-   */
   constructor(
-    error: string,
+    error: ServiceError,
     errorDescription: string,
     trace: string,
     originalError?: Error
@@ -65,52 +73,6 @@ export class ApplicationError extends Error {
     this.trace = trace;
 
     // Maintain proper prototype chain
-    Object.setPrototypeOf(this, ApplicationError.prototype);
-  }
-
-  /**
-   * Sends the error response to the client.
-   * @param res - The Express response object.
-   */
-  public send(res: any): void {
-    res.status(this.code).json({
-      error: this.error,
-      error_description: this.error_description,
-      trace: this.trace,
-    });
+    Object.setPrototypeOf(this, K2Error.prototype);
   }
 }
-
-/**
- * Sends an error response based on the provided error object.
- * @param err - The error object, which can be an instance of ApplicationError or any other error.
- * @param res - The Express response object.
- * @param logger - An optional logger instance for logging errors.
- * @param trace - An optional trace identifier for debugging.
- */
-export const sendError = (
-  err: any,
-  res: any,
-  logger?: any,
-  trace?: string
-): void => {
-  if (err instanceof ApplicationError) {
-    err.send(res);
-    return;
-  }
-
-  // Log the error using the provided logger or default to console.error
-  if (logger) {
-    logger.error(err);
-  } else {
-    console.error(err);
-  }
-
-  // Create and send a generic system error
-  const systemError = new ApplicationError(
-    K2Error.SYSTEM_ERROR,
-    "Internal system error occurred, administrator was notified",
-    trace || "sys_int_helper"
-  );
-  systemError.send(res);
-};
