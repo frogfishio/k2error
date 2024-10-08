@@ -1,0 +1,23 @@
+{
+  "name": "@frogfish/k2error",
+  "version": "1.0.1",
+  "description": "A simple error handling library for K2 applications.",
+  "main": "error.js",
+  "types": "error.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dist": "gulp && cd dist && npm publish --access public",
+    "build:watch": "tsc --watch"
+  },
+  "author": "El'Diablo",
+  "license": "GPL-3.0-only",
+  "devDependencies": {
+    "gulp": "^5.0.0",
+    "gulp-bump": "^3.2.0",
+    "gulp-clean": "^0.4.0",
+    "gulp-json-transform": "^0.5.0",
+    "gulp-tsc": "^1.3.2",
+    "gulp-typescript": "^6.0.0-alpha.1",
+    "typescript": "^5.6.2"
+  }
+}
