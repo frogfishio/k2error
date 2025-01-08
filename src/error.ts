@@ -4,6 +4,7 @@ export enum ServiceError {
   INVALID_REQUEST = "invalid_request",
   ALREADY_EXISTS = "already_exists",
   INVALID_TOKEN = "invalid_token",
+  TOKEN_EXPIRED = "token_expired",
   AUTH_ERROR = "auth_error",
   INSUFFICIENT_SCOPE = "insufficient_scope",
   NOT_FOUND = "not_found",
@@ -11,8 +12,6 @@ export enum ServiceError {
   SYSTEM_ERROR = "system_error",
   CONFIGURATION_ERROR = "configuration_error",
   SERVICE_ERROR = "service_error",
-
-  // New suggested additions
   BAD_REQUEST = "bad_request",
   PAYMENT_REQUIRED = "payment_required",
   CONFLICT = "conflict",
@@ -27,26 +26,25 @@ export enum ServiceError {
 
 // Mapping of error identifiers to HTTP status codes
 const errorCodes: Record<ServiceError, number> = {
+  [ServiceError.BAD_REQUEST]: 400,
   [ServiceError.VALIDATION_ERROR]: 400,
   [ServiceError.INVALID_REQUEST]: 400,
   [ServiceError.ALREADY_EXISTS]: 400,
   [ServiceError.INVALID_TOKEN]: 401,
+  [ServiceError.TOKEN_EXPIRED]: 401,
+  [ServiceError.UNAUTHORIZED]: 401,
+  [ServiceError.PAYMENT_REQUIRED]: 402,
   [ServiceError.AUTH_ERROR]: 403,
+  [ServiceError.FORBIDDEN]: 403,
   [ServiceError.INSUFFICIENT_SCOPE]: 403,
   [ServiceError.NOT_FOUND]: 404,
   [ServiceError.UNSUPPORTED_METHOD]: 405,
+  [ServiceError.CONFLICT]: 409,
+  [ServiceError.TOO_MANY_REQUESTS]: 429,
   [ServiceError.SYSTEM_ERROR]: 500,
   [ServiceError.CONFIGURATION_ERROR]: 500,
-  [ServiceError.SERVICE_ERROR]: 502,
-
-  // New mappings for suggested additions
-  [ServiceError.BAD_REQUEST]: 400,
-  [ServiceError.PAYMENT_REQUIRED]: 402,
-  [ServiceError.CONFLICT]: 409,
-  [ServiceError.UNAUTHORIZED]: 401,
-  [ServiceError.FORBIDDEN]: 403,
-  [ServiceError.TOO_MANY_REQUESTS]: 429,
   [ServiceError.NOT_IMPLEMENTED]: 501,
+  [ServiceError.SERVICE_ERROR]: 502,
   [ServiceError.BAD_GATEWAY]: 502,
   [ServiceError.SERVICE_UNAVAILABLE]: 503,
   [ServiceError.GATEWAY_TIMEOUT]: 504,
