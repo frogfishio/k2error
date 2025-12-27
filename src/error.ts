@@ -101,6 +101,7 @@ export class K2Error extends Error {
   public error_description: string;
   public trace?: string;
   public cause?: unknown;
+  public sensitive?: unknown; // internal-only, non-enumerable when set via setSensitive()/withSensitive()
   public chain: ErrorChainItem[];
 
   constructor(
@@ -164,6 +165,20 @@ export class K2Error extends Error {
       stack: this.stack,
     });
   }
+
+  /**
+   * Attach internal-only sensitive payload. This is intentionally non-enumerable so it
+   * won't accidentally appear in JSON serialization or naive structured logs.
+   */
+  setSensitive(value: unknown): this {
+    Object.defineProperty(this, "sensitive", {
+      value,
+      enumerable: false,
+      writable: true,
+      configurable: true,
+    });
+    return this;
+  }
 }
 
 /** Helper for mapping ServiceError → HTTP status without constructing K2Error */
@@ -200,6 +215,21 @@ export function wrap(
     trace,
     err instanceof Error ? err : undefined
   );
+}
+
+/**
+ * Attach a non-enumerable sensitive payload to an error (internal-only).
+ * Does not affect the public Problem Details serialization.
+ */
+export function withSensitive(err: unknown, value: unknown): K2Error {
+  const k2 = err instanceof K2Error ? err : wrap(err);
+  Object.defineProperty(k2, "sensitive", {
+    value,
+    enumerable: false,
+    writable: true,
+    configurable: true,
+  });
+  return k2;
 }
 
 /**

@@ -1,6 +1,6 @@
 {
   "name": "@frogfish/k2error",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "A simple error handling library for K2 applications.",
   "type": "module",
   "main": "./dist/error.js",

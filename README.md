@@ -138,6 +138,7 @@ import {
   assertNotNull,
   invariant,
   wrap,
+  withSensitive,
   chain,
   rethrow,
   attempt,
@@ -198,6 +199,7 @@ new K2Error(
 - `trace?` – explicit trace token
 - `chain` – semantic propagation hops
 - `cause?` – original error
+- `sensitive?` – internal-only payload (non-enumerable when set via `setSensitive()` / `withSensitive()`) for rich debugging data that must not be sent to clients
 - `name` – error name ("K2Error")
 - `kind` – stable discriminator ("K2Error")
 
@@ -225,11 +227,65 @@ All throw `K2Error` and narrow types in TS.
 
 ```ts
 wrap(err, error?, trace?, errorDescription?)
+withSensitive(err, value)
 chain(err, trace?, errorDescription?, error?, stage?)
 rethrow(err, trace?, errorDescription?, error?, stage?)
 ```
 
 `chain()` **mutates the error intentionally** to preserve a single causal identity.
+
+
+## Sensitive Payload (Internal-Only)
+
+Sometimes you need to attach rich context (such as upstream error codes, request payload fragments, or a DB pipeline) for logging and diagnostics, but must never leak this information to clients. The RFC7807 response remains stable and sanitized.
+
+**Why:** Stacks and causes can be private; traces are static and searchable; `sensitive` lets you attach structured diagnostics at the origin without accidentally serializing them.
+
+**How:** The `sensitive` property is intentionally **non-enumerable** when set through `err.setSensitive(value)` or `withSensitive(err, value)`. It will not appear in `JSON.stringify(err)` or in `toPublicJSON()` / `toJSON()`.
+
+**Boundary pattern:** Log `toDebugJSON()` plus `err.sensitive`, but respond using `toPublicJSON()`.
+
+Example (HTTP boundary):
+```ts
+import { isK2Error, PROBLEM_JSON, wrap } from "@frogfish/k2error";
+
+app.use((err, req, res, next) => {
+  const k2 = isK2Error(err) ? err : wrap(err);
+
+  // Internal logs: include debug + sensitive payload if present
+  req.log?.error?.({ ...k2.toDebugJSON(), sensitive: (k2 as any).sensitive }, "request failed");
+
+  // Public response: RFC 7807 only (no stack, no cause, no sensitive)
+  res.status(k2.code).type(PROBLEM_JSON).send(k2.toPublicJSON());
+});
+```
+
+Example (MongoDB aggregation):
+```ts
+import { chain, ServiceError } from "@frogfish/k2error";
+
+try {
+  const rows = await collection.aggregate(pipeline).toArray();
+  return rows;
+} catch (err) {
+  // Attach rich diagnostics for logs only
+  throw chain(err, "sys_mdb_ag", "Aggregation failed", ServiceError.SYSTEM_ERROR, "repo.aggregate")
+    .setSensitive({
+      op: "aggregate",
+      collection: collection.collectionName,
+      pipeline,
+      mongo: {
+        name: (err as any)?.name,
+        message: (err as any)?.message,
+        code: (err as any)?.code,
+        codeName: (err as any)?.codeName,
+      },
+    });
+}
+```
+
+> Keep `error_description` / `chain` free of secrets because they are public.  
+> `sensitive` is for structured diagnostics and may contain request fragments; treat it like secrets.
 
 
 
